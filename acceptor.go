@@ -1,6 +1,8 @@
 package peer
 
-import log "github.com/greywords/logger"
+import (
+	log "github.com/greywords/logger"
+)
 
 type Acceptor interface {
 	Start(name string, mgr *SessionManager) error

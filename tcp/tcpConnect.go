@@ -58,8 +58,9 @@ func (t *tcpConnection) Send(msg []byte) (err error) {
 }
 
 func (t *tcpConnection) Close() {
-	t.conn.Close()
-	t.running = false
+	t.closeOnce.Do(func() {
+		close(t.closeCh)
+	})
 }
 
 func (t *tcpConnection) ID() int64 {

@@ -14,24 +14,33 @@ func init() {
 type tcpAcceptor struct {
 	addr string
 	run  bool
+	ls   *net.TCPListener
 }
 
-func (w *tcpAcceptor) Start(addr string, mgr *peer.SessionManager) error {
+func (w *tcpAcceptor) init(addr string) {
 	w.addr = addr
 	w.run = true
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		log.Fatal("resolve tcp addr failed:", err.Error())
 	}
-	ls, err := net.ListenTCP("tcp", tcpAddr)
+	w.ls, err = net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
 		log.Fatal("listen tcp addr failed:", err.Error())
+		panic(err.Error())
 	}
 	log.Debug("listen tcp on %s success,waiting connect!", addr)
-
+}
+func (w *tcpAcceptor) Start(addr string, mgr *peer.SessionManager) error {
+	w.init(addr)
+	defer func() {
+		//todo 通知服务中心自己退出了
+		return
+	}()
+	//todo 通知服务中心连接上了
 	for w.run {
-		ls.SetDeadline(time.Now().Add(time.Second * 10))
-		conn, err := ls.AcceptTCP()
+		w.ls.SetDeadline(time.Now().Add(time.Second * 10))
+		conn, err := w.ls.AcceptTCP()
 		if err != nil {
 			netErr, ok := err.(net.Error)
 

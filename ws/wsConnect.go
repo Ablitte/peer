@@ -66,8 +66,9 @@ func (w *wsConnection) Send(msg []byte) (err error) {
 }
 
 func (w *wsConnection) Close() {
-	w.conn.Close()
-	w.running = false
+	w.closeOnce.Do(func() {
+		close(w.closeCh)
+	})
 }
 
 func (w *wsConnection) RemoteAddr() string {
@@ -98,54 +99,54 @@ func newConnection(conn *websocket.Conn, p *peer.SessionManager) *wsConnection {
 	wsc.init()
 	return wsc
 }
-func (ws *wsConnection) close() {
-	ws.p.UnRegister <- ws.ID()
-	ws.conn.Close()
-	ws.running = false
-	ws.closeOnce.Do(func() {
-		close(ws.closeCh)
+func (w *wsConnection) close() {
+	w.p.UnRegister <- w.ID()
+	w.conn.Close()
+	w.running = false
+	w.closeOnce.Do(func() {
+		close(w.closeCh)
 	})
 }
 
 // 接收循环
-func (ws *wsConnection) recvLoop() {
+func (w *wsConnection) recvLoop() {
 	defer func() {
-		log.Debug("recvLoop: closed: wsId=%d", ws.ID())
-		ws.close()
+		log.Debug("recvLoop: closed: wsId=%d", w.ID())
+		w.close()
 	}()
-	ws.conn.SetReadDeadline(time.Now().Add(pongWait))
-	ws.conn.SetPongHandler(func(string) error { ws.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-	for ws.conn != nil {
-		_, data, err := ws.conn.ReadMessage()
+	w.conn.SetReadDeadline(time.Now().Add(pongWait))
+	w.conn.SetPongHandler(func(string) error { w.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	for w.conn != nil {
+		_, data, err := w.conn.ReadMessage()
 		if err != nil {
 			break
 		}
-		ws.p.ProcessMessage(ws.ID(), data)
+		w.p.ProcessMessage(w.ID(), data)
 	}
 }
 
-func (ws *wsConnection) sendLoop() {
+func (w *wsConnection) sendLoop() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
-		log.Debug("sendLoop: closed: wsId= %d", ws.ID())
+		log.Debug("sendLoop: closed: wsId= %d", w.ID())
 		ticker.Stop()
-		ws.conn.Close()
-		ws.running = false
-		close(ws.send)
+		w.conn.Close()
+		w.running = false
+		close(w.send)
 
 	}()
 	for {
 		select {
-		case <-ws.closeCh:
+		case <-w.closeCh:
 			return
-		case msg := <-ws.send:
-			ws.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := ws.conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
+		case msg := <-w.send:
+			w.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := w.conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
 				return
 			}
 		case <-ticker.C:
-			ws.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := ws.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			w.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := w.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
