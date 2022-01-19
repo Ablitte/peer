@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/greywords/logger v0.0.0-20210927065309-e75aac9aa322
-	github.com/greywords/toolkits v0.0.0-20220119021849-280233206b79
+	github.com/greywords/utils v0.0.0-20220119052428-b009ced90bfb
 )
 
 require (

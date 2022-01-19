@@ -33,11 +33,6 @@ func (w *tcpAcceptor) init(addr string) {
 }
 func (w *tcpAcceptor) Start(addr string, mgr *peer.SessionManager) error {
 	w.init(addr)
-	defer func() {
-		//todo 通知服务中心自己退出了
-		return
-	}()
-	//todo 通知服务中心连接上了
 	for w.run {
 		w.ls.SetDeadline(time.Now().Add(time.Second * 10))
 		conn, err := w.ls.AcceptTCP()
