@@ -13,10 +13,5 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-/.idea/.gitignore
-/.idea/deployment.xml
-/.idea/modules.xml
-/.idea/peer.iml
-/.idea/vcs.xml
-/go.mod
+/.idea
 /go.sum
